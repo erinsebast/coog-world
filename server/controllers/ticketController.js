@@ -1,5 +1,6 @@
 const ticketModel = require('../models/ticketModel.js');
 const db = require('../config/db');
+const QRCode = require('qrcode');
 
 exports.createTicket = async (req, res) => {
   const { ticket_type, price } = req.body;
@@ -132,7 +133,15 @@ exports.purchaseTicket = async (req, res) => {
           [transactionId, transactionId]
       );
 
-      res.status(200).json({ success: true, message: 'Ticket purchase recorded.' });
+      const qrUrl = `http://localhost:5173/tickets/download/${ticket_id}?qty=${quantity}`;
+const qrCodeDataUrl = await QRCode.toDataURL(qrUrl);
+
+res.status(200).json({
+  success: true,
+  message: 'Ticket purchase recorded.',
+  qrCode: qrCodeDataUrl
+});
+
   } catch (err) {
       console.error('Purchase error:', err);
       res.status(500).json({ message: 'Purchase failed', error: err.message });
@@ -145,6 +154,7 @@ exports.getUserTicketPurchases = async (req, res) => {
       const [purchases] = await db.query(`
           SELECT 
   tt.ticket_type AS type,
+  tt.ticket_id AS ticket_id, -- ✅ Add this line
   pp.quantity_sold AS quantity,
   pp.visit_date AS date
           FROM product_purchases pp

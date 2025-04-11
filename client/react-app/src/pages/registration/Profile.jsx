@@ -14,7 +14,6 @@ const formatPhoneNumber = (phone) => {
     return cleaned;
 };
 
-
 function Profile() {
     const [user, setUser] = useState(null);
     const [formData, setFormData] = useState({});
@@ -43,11 +42,11 @@ function Profile() {
         try {
             const ticketRes = await fetch(`/api/ticket-type/purchases/${userId}`);
             const ticketData = await ticketRes.json();
-            
+
             const today = new Date().setHours(0, 0, 0, 0);
             const upcoming = [];
             const past = [];
-    
+
             ticketData.tickets.forEach(ticket => {
                 const visitDate = new Date(ticket.date).setHours(0, 0, 0, 0);
                 if (visitDate >= today) {
@@ -56,24 +55,22 @@ function Profile() {
                     past.push(ticket);
                 }
             });
-    
+
             setUpcomingTickets(upcoming);
             setPastTickets(past);
-    
+
             const shopRes = await fetch(`/api/shop-purchases/${userId}`);
             const shopData = await shopRes.json();
-            console.log("🧾 Shop Purchases:", shopData.purchases);
-            console.log("🧾 Full Shop Purchases Payload:", shopData.purchases);
             setPurchases(shopData.purchases);
-    
+
             const rideRes = await fetch(`/api/rides/history/${userId}`);
             const rideData = await rideRes.json();
             setRides(rideData.rides);
-    
+
         } catch (err) {
             console.error('Error fetching user-related data:', err);
         }
-    };    
+    };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -120,6 +117,14 @@ function Profile() {
         }
     };
 
+    // Group upcoming tickets by visit date
+    const groupedByDate = upcomingTickets.reduce((acc, ticket) => {
+        const date = new Date(ticket.date).toLocaleDateString();
+        if (!acc[date]) acc[date] = [];
+        acc[date].push(ticket);
+        return acc;
+    }, {});
+
     if (!user) return <p>Loading user data...</p>;
 
     return (
@@ -159,44 +164,49 @@ function Profile() {
             </div>
 
             <div className="tickets">
-  <button className="toggle-section" onClick={() => setShowTickets(!showTickets)}>
-    {showTickets ? 'Hide Tickets' : 'Your Tickets'}
-  </button>
+                <button className="toggle-section" onClick={() => setShowTickets(!showTickets)}>
+                    {showTickets ? 'Hide Tickets' : 'Your Tickets'}
+                </button>
 
-  {showTickets && (
-    <>
-      <h3>📅 Upcoming Visits</h3>
-      <ul className="profile-list">
-        {upcomingTickets.length > 0 ? (
-          upcomingTickets.map((ticket, index) => (
-            <li key={`upcoming-${index}`}>
-              <strong>Ticket Type:</strong> {ticket.type} |{" "}
-              <strong>Quantity:</strong> {ticket.quantity} |{" "}
-              <strong>Visit Date:</strong> {new Date(ticket.date).toLocaleDateString()}
-            </li>
-          ))
-        ) : (
-          <p>No upcoming visits.</p>
-        )}
-      </ul>
+                {showTickets && (
+                    <>
+                        <h3>📅 Upcoming Visits</h3>
+                        <ul className="profile-list">
+                            {Object.keys(groupedByDate).length > 0 ? (
+                                Object.entries(groupedByDate).map(([date, tickets]) => (
+                                    <li key={date}>
+                                        <h4>📅 Visit Date: {date}</h4>
+                                        <ul>
+                                            {tickets.map((ticket, index) => (
+                                                <li key={index}>
+                                                <strong>{ticket.type}</strong> | Quantity: {ticket.quantity}
+                                              </li>                                              
+                                            ))}
+                                        </ul>
+                                    </li>
+                                ))
+                            ) : (
+                                <p>No upcoming visits.</p>
+                            )}
+                        </ul>
 
-      <h3>📜 Past Visits</h3>
-      <ul className="profile-list">
-        {pastTickets.length > 0 ? (
-          pastTickets.map((ticket, index) => (
-            <li key={`past-${index}`}>
-              <strong>Ticket Type:</strong> {ticket.type} |{" "}
-              <strong>Quantity:</strong> {ticket.quantity} |{" "}
-              <strong>Visit Date:</strong> {new Date(ticket.date).toLocaleDateString()}
-            </li>
-          ))
-        ) : (
-          <p>No past visits.</p>
-        )}
-      </ul>
-    </>
-  )}
-</div>
+                        <h3>📜 Past Visits</h3>
+                        <ul className="profile-list">
+                            {pastTickets.length > 0 ? (
+                                pastTickets.map((ticket, index) => (
+                                    <li key={`past-${index}`}>
+                                        <strong>Ticket Type:</strong> {ticket.type} |{" "}
+                                        <strong>Quantity:</strong> {ticket.quantity} |{" "}
+                                        <strong>Visit Date:</strong> {new Date(ticket.date).toLocaleDateString()}
+                                    </li>
+                                ))
+                            ) : (
+                                <p>No past visits.</p>
+                            )}
+                        </ul>
+                    </>
+                )}
+            </div>
 
             <div className="shop-purchases">
                 <button className="toggle-section" onClick={() => setShowPurchases(!showPurchases)}>
@@ -204,36 +214,32 @@ function Profile() {
                 </button>
                 {showPurchases && (
                     <ul className="profile-list">
-                    {purchases.map((purchase, index) => {
-  console.log("Purchase object", purchase); // ⬅️ Add this
-  return (
-    <li key={index}>
-  Item: <strong>{purchase.item}</strong> | 
-  Quantity: <strong>{purchase.quantity}</strong> |
-  Price: ${parseFloat(purchase.total_price).toFixed(2)} |
-  Date: {new Date(purchase.date).toLocaleDateString()}
-</li>
-  );
-})}
-
-                  </ul>                  
+                        {purchases.map((purchase, index) => (
+                            <li key={index}>
+                                Item: <strong>{purchase.item}</strong> |
+                                Quantity: <strong>{purchase.quantity}</strong> |
+                                Price: ${parseFloat(purchase.total_price).toFixed(2)} |
+                                Date: {new Date(purchase.date).toLocaleDateString()}
+                            </li>
+                        ))}
+                    </ul>
                 )}
             </div>
-            <div className="ride-history">
-  <button className="toggle-section" onClick={() => setShowRides(!showRides)}>
-    {showRides ? 'Hide Ride History' : 'Your Ride History'}
-  </button>
-  {showRides && (
-    <ul className="profile-list">
-      {rides.map((ride, index) => (
-        <li key={index}>
-          Ride: {ride.Ride_name} | Type: {ride.Ride_type} | Date: {new Date(ride.ride_date).toLocaleString()}
-        </li>
-      ))}
-    </ul>
-  )}
-</div>
 
+            <div className="ride-history">
+                <button className="toggle-section" onClick={() => setShowRides(!showRides)}>
+                    {showRides ? 'Hide Ride History' : 'Your Ride History'}
+                </button>
+                {showRides && (
+                    <ul className="profile-list">
+                        {rides.map((ride, index) => (
+                            <li key={index}>
+                                Ride: {ride.Ride_name} | Type: {ride.Ride_type} | Date: {new Date(ride.ride_date).toLocaleString()}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
         </div>
     );
 }

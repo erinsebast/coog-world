@@ -10,7 +10,7 @@ function TicketCard({ title, price, description1, description2, ticketId }) {
     const [quantity, setQuantity] = useState(1);
     const [visitDate, setVisitDate] = useState('');
     const { addToCart } = useCart();
-    
+
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const userId = user?.id || storedUser?.id || storedUser?.Visitor_ID;
 
@@ -27,12 +27,12 @@ function TicketCard({ title, price, description1, description2, ticketId }) {
         }
 
         addToCart({
-            type: 'ticket',
+            type: "ticket",
             ticketId,
             title,
             price,
             quantity: parseInt(quantity),
-            visitDate, // ✅ required for checkout + analytics
+            visitDate
         });
 
         alert('✅ Ticket added to cart!');
@@ -46,7 +46,6 @@ function TicketCard({ title, price, description1, description2, ticketId }) {
                 <li>{description1}</li>
                 <li>{description2}</li>
             </ul>
-
             <div style={{ marginBottom: '10px' }}>
                 <label>Quantity: </label>
                 <select
@@ -59,8 +58,6 @@ function TicketCard({ title, price, description1, description2, ticketId }) {
                     ))}
                 </select>
             </div>
-
-            {/* ✅ Visit Date Input */}
             <div style={{ marginBottom: '10px' }}>
                 <label>Visit Date: </label>
                 <input
@@ -71,7 +68,6 @@ function TicketCard({ title, price, description1, description2, ticketId }) {
                     required
                 />
             </div>
-
             <div><strong>Total: ${(price * quantity).toFixed(2)}</strong></div>
             <button className='fancy' onClick={handleAddToCart}>Add to Cart</button>
         </div>
@@ -82,7 +78,7 @@ function ParkingCard({ title, price, description1, description2, ticketId }) {
     const { user } = useAuth();
     const storedUser = JSON.parse(localStorage.getItem('user'));
     const userId = user?.id || storedUser?.id || storedUser?.Visitor_ID;
-    const { addToCart } = useCart();
+    const { addToCart, cartItems } = useCart();
     const navigate = useNavigate();
 
     const handleAddParking = () => {
@@ -92,11 +88,19 @@ function ParkingCard({ title, price, description1, description2, ticketId }) {
             return;
         }
 
+        const dayPass = cartItems.find(item => item.title === "Day Pass" && item.visitDate);
+        if (!dayPass) {
+            alert("Please add a Day Pass first so we can associate the parking visit date.");
+            return;
+        }
+
         addToCart({
+            type: "ticket",
             ticketId,
             title,
             price,
-            quantity: 1, 
+            quantity: 1,
+            visitDate: dayPass.visitDate
         });
 
         alert("✅ Parking pass added to cart!");
@@ -114,7 +118,6 @@ function ParkingCard({ title, price, description1, description2, ticketId }) {
         </div>
     );
 }
-
 
 function Tickets() {
     const [ticketOptions, setTicketOptions] = useState([]);
@@ -181,13 +184,12 @@ function Tickets() {
             <div className='price-container'>
                 {ticketOptions.length > 3 && (
                     <ParkingCard
-                    title={ticketOptions[3].ticket_type}
-                    price={ticketOptions[3].price}
-                    description1={ticketOptions[3].description1}
-                    description2={ticketOptions[3].description2}
-                    ticketId={ticketOptions[3].ticket_id}
-                />
-                
+                        title={ticketOptions[3].ticket_type}
+                        price={ticketOptions[3].price}
+                        description1={ticketOptions[3].description1}
+                        description2={ticketOptions[3].description2}
+                        ticketId={ticketOptions[3].ticket_id}
+                    />
                 )}
             </div>
         </>
